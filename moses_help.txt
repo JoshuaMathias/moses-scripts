@@ -1,0 +1,484 @@
+Moses - A beam search decoder for phrase-based statistical machine translation models
+Copyright (C) 2006 University of Edinburgh
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+***********************************************************************
+
+Built on Aug  1 2016 at 13:38:47
+
+WHO'S FAULT IS THIS GODDAM SOFTWARE:
+Chris Callison-Burch	   contact: anytime, anywhere   international playboy
+Chris Dyer	   contact: can't. i'll be out driving my mustang   driving my mustang
+Nicola Bertoldi	   contact: 911   I'll answer question on: scripts & other stuff
+Evan Herbst	   contact: Small college in upstate New York
+Richard Zens	   contact: richard at aachen dot de   I'll answer question on: ambiguous source input, confusion networks, confusing source code
+Hieu Hoang	   contact: http://www.hoang.co.uk/hieu/   phd student at Edinburgh Uni. Original Moses developer   I'll answer question on: general queries/ flames on Moses.
+Christine Moran	   contact: weird building at MIT
+Ondrej Bojar   czech this out!
+Marcello Federico	   contact: federico at itc at it   Researcher at ITC-irst, Trento, Italy   I'll answer question on: IRST language model
+Wade Shen	   contact: via morse code   buying another laptop
+Philipp Koehn	   contact: only between 2 and 4am   I'll answer question on: Nothing fazes this dude
+Brooke Cowan	   contact: brooke@csail.mit.edu   if you're going to san francisco, be sure to wear a flower in your hair
+Alexandra Constantin   eu sunt varza
+
+
+Usage:
+
+Main Options:
+  -f [ --config ]                       location of the configuration file
+  -i [ --input-file ]                   location of the input file to be 
+                                        translated
+  -v [ --verbose ]                      verbosity level of the logging
+  --version                             show version of Moses and libraries 
+                                        used
+  --show-weights                        print feature weights and exit
+  --time-out                            seconds after which is interrupted 
+                                        (-1=no time-out, default is -1)
+  --segment-time-out                    seconds for single segment after which 
+                                        is interrupted (-1=no time-out, default
+                                        is -1)
+
+Moses Server Options:
+  --server                              Run moses as a translation server.
+  --daemon                              Run moses as a translation server in 
+                                        the background.
+  --server-port                         Port for moses server
+  --server-log                          Log destination for moses server
+  --serial                              Run server in serial mode, processing 
+                                        only one request at a time.
+  --server-maxconn                      Max. No of simultaneous HTTP 
+                                        transactions allowed by the server.
+  --server-maxconn-backlog              Max. No. of requests the OS will queue 
+                                        if the server is busy.
+  --server-keepalive-maxconn            Max. No. of requests the server will 
+                                        accept on a single TCP connection.
+  --server-keepalive-timeout            Max. number of seconds the server will 
+                                        keep a persistent connection alive.
+  --server-timeout                      Max. number of seconds the server will 
+                                        wait for a client to submit a request 
+                                        once a connection has been established.
+  --session-timeout                     Timeout for sessions, e.g. '2h30m' or 
+                                        1d (=24h)
+  --session-cache-size                  Max. number of sessions cached.Least 
+                                        recently used session is dumped first.
+
+Input Format Options:
+  --input-factors                       list of factors in the input
+  --inputtype                           text (0), confusion network (1), word 
+                                        lattice (2), tree (3) (default = 0)
+  --xml-input                           allows markup of input with desired 
+                                        translations and probabilities. values 
+                                        can be 'pass-through' (default), 
+                                        'inclusive', 'exclusive', 'constraint',
+                                        'ignore'
+  --xml-brackets                        specify strings to be used as xml tags 
+                                        opening and closing, e.g. "{{ }}" 
+                                        (default "< >"). Avoid square brackets 
+                                        because of configuration file format. 
+                                        Valid only with text input mode
+  --start-translation-id                Id of 1st input. Default = 0
+  --alternate-weight-setting            alternate set of weights to used per 
+                                        xml specification
+
+Simulated Post-editing Options:
+  --spe-src                             Simulated post-editing. Source filename
+  --spe-trg                             Simulated post-editing. Target filename
+  --spe-aln                             Simulated post-editing. Alignment 
+                                        filename
+
+Search Options:
+  --search-algorithm                    Which search algorithm to use.
+                                        0=normal stack (default)
+                                        1=cube pruning
+                                        3=chart (with cube pruning)
+                                        4=stack with batched lm requests
+                                        5=chart (with incremental search)
+                                        6=string-to-tree
+                                        7=tree-to-string
+                                        8=tree-to-string (SCFG-based)
+                                        9=forest-to-string
+  -b [ --beam-threshold ]               threshold for threshold pruning
+  --early-discarding-threshold          threshold for constructing hypotheses 
+                                        based on estimate cost
+  -s [ --stack ]                        maximum stack size for histogram 
+                                        pruning. 0 = unlimited stack size
+  --stack-diversity                     minimum number of hypothesis of each 
+                                        coverage in stack (default 0)
+  --weight-file                         feature weights file. Do *not* put 
+                                        weights for 'core' features in here - 
+                                        they go in moses.ini
+  --weight                              weights for ALL models, 1 per line 
+                                        'WeightName value'. Weight names can be
+                                        repeated
+  --feature-overwrite                   Override arguments in a particular 
+                                        feature function with a particular key.
+                                        Format: -feature-overwrite "FeatureName
+                                        key=value"
+  --max-partial-trans-opt               maximum number of partial translation 
+                                        options per input span (during mapping 
+                                        steps)
+  --max-trans-opt-per-coverage          maximum number of translation options 
+                                        per input span (after applying mapping 
+                                        steps)
+  --max-phrase-length                   maximum phrase length (default 20)
+  --translation-option-threshold        threshold for translation options 
+                                        relative to best for input phrase
+  --disable-discarding                  disable hypothesis discarding
+  --phrase-drop-allowed                 if present, allow dropping of source 
+                                        words
+  --threads                             number of threads to use in decoding 
+                                        (defaults to single-threaded)
+
+Cube pruning options.:
+  --cube-pruning-pop-limit              How many hypotheses should be popped 
+                                        for each stack. (default = 1000)
+  --cube-pruning-diversity              How many hypotheses should be created 
+                                        for each coverage. (default = 0)
+  --cube-pruning-lazy-scoring           Don't fully score a hypothesis until it
+                                        is popped
+  --cube-pruning-deterministic-search   Break ties deterministically during 
+                                        search
+
+Minimum Bayes Risk (MBR), Lattice MBR, and Consensus decoding:
+  --minimum-bayes-risk                  use miminum Bayes risk to determine 
+                                        best translation
+  --mbr-size                            number of translation candidates 
+                                        considered in MBR decoding (default 
+                                        200)
+  --mbr-scale                           scaling factor to convert log linear 
+                                        score probability in MBR decoding 
+                                        (default 1.0)
+  --lminimum-bayes-risk                 use lattice miminum Bayes risk to 
+                                        determine best translation
+  --consensus-decoding                  use consensus decoding (De Nero et. al.
+                                        2009)
+  --lmbr-map-weight                     weight given to map solution when doing
+                                        lattice MBR (default 0)
+  --lmbr-pruning-factor                 average number of nodes/word wanted in 
+                                        pruned lattice
+  --lattice-hypo-set                    to use lattice as hypo set during 
+                                        lattice MBR
+
+Options specific to Lattic MBR:
+  --lmbr-p                              unigram precision value for lattice mbr
+  --lmbr-r                              ngram precision decay value for lattice
+                                        mbr
+  --lmbr-thetas                         theta(s) for lattice mbr calculation
+
+Distortion options:
+  --distortion-limit                    distortion (reordering) limit in 
+                                        maximum number of words (0 = monotone, 
+                                        -1 = unlimited)
+  --monotone-at-punctuation             do not reorder over punctuation
+  --early-distortion-cost               include estimate of distortion cost yet
+                                        to be incurred in the score [Moore & 
+                                        Quirk 2007]. Default is no
+  --distortion                          configurations for each 
+                                        factorized/lexicalized reordering 
+                                        model.
+
+Chart Decoding Options:
+  --max-chart-span                      maximum num. of source word chart rules
+                                        can consume (default 10)
+  --non-terminals                       list of non-term symbols, space 
+                                        separated
+  --rule-limit                          a little like table limit. But for 
+                                        chart decoding rules. Default is 
+                                        DEFAULT_MAX_TRANS_OPT_SIZE
+  --source-label-overlap                What happens if a span already has a 
+                                        label. 0=add more. 1=replace. 
+                                        2=discard. Default is 0
+  --unknown-lhs                         file containing target lhs of unknown 
+                                        words. 1 per line: LHS prob
+
+Output Options:
+  --report-all-factors                  report all factors in output, not just 
+                                        first
+  --output-factors                      list if factors in the output
+  --print-id                            prefix translations with id. Default if
+                                        false
+  --print-passthrough                   output the sgml tag <passthrough> 
+                                        without any computation on that. 
+                                        Default is false
+  --print-passthrough-in-n-best         output the sgml tag <passthrough> 
+                                        without any computation on that in each
+                                        entry of the n-best-list. Default is 
+                                        false
+  --output-factors                      list of factors in the output
+  --print-all-derivations               to print all derivations in search 
+                                        graph
+  -T [ --translation-details ]          for each best hypothesis, report 
+                                        translation details to the given file
+  --output-hypo-score                   Output the hypo score to stdout with 
+                                        the output string. For search error 
+                                        analysis. Default is false
+  --output-word-graph                   Output stack info as word graph. Takes 
+                                        filename, 0=only hypos in stack, 
+                                        1=stack + nbest hypos
+  --tree-translation-details            for each hypothesis, report translation
+                                        details with tree fragment info to 
+                                        given file
+  --print-alignment-info                Output word-to-word alignment to 
+                                        standard out, separated from 
+                                        translation by |||. Word-to-word 
+                                        alignments are takne from the phrase 
+                                        table if any. Default is false
+  --alignment-output-file               print output word alignments into given
+                                        file
+  --sort-word-alignment                 Sort word alignments for more 
+                                        consistent display. 0=no sort 
+                                        (default), 1=target order
+  -t [ --report-segmentation ]          report phrase segmentation in the 
+                                        output
+  --report-segmentation-enriched        report phrase segmentation in the 
+                                        output with additional information
+  --translation-all-details             for all hypotheses, report translation 
+                                        details to the given file
+  --include-lhs-in-search-graph         When outputting chart search graph, 
+                                        include the label of the LHS of the 
+                                        rule (useful when using syntax)
+
+N-best Options:
+  --n-best-list                         file and size of n-best-list to be 
+                                        generated; specify - as the file in 
+                                        order to write to STDOUT
+  --labeled-n-best-list                 print out labels for each weight type 
+                                        in n-best list. default is true
+  --n-best-trees                        Write n-best target-side trees to 
+                                        n-best-list
+  --n-best-factor                       factor to compute the maximum number of
+                                        contenders (=factor*nbest-size). value 
+                                        0 means infinity, i.e. no threshold. 
+                                        default is 0
+  --report-all-factors-in-n-best        Report all factors in n-best-lists. 
+                                        Default is false
+  --lattice-samples                     generate samples from lattice, in same 
+                                        format as nbest list. Uses the file and
+                                        size arguments, as in n-best-list
+  --include-segmentation-in-n-best      include phrasal segmentation in the 
+                                        n-best list. default is false
+  --print-alignment-info-in-n-best      Include word-to-word alignment in the 
+                                        n-best list. Word-to-word alignments 
+                                        are taken from the phrase table if any.
+                                        Default is false
+
+Options for outputting search graphs:
+  --output-search-graph                 Output connected hypotheses of search 
+                                        into specified filename
+  --output-search-graph-extended        Output connected hypotheses of search 
+                                        into specified filename, in extended 
+                                        format
+  --unpruned-search-graph               When outputting chart search graph, do 
+                                        not exclude dead ends. Note: stack 
+                                        pruning may have eliminated some 
+                                        hypotheses
+  --output-search-graph-slf             Output connected hypotheses of search 
+                                        into specified directory, one file per 
+                                        sentence, in HTK standard lattice 
+                                        format (SLF) - the flag should be 
+                                        followed by a directory name, which 
+                                        must exist
+  --output-search-graph-hypergraph      DEPRECATED! Output connected hypotheses
+                                        of search into specified directory, one
+                                        file per sentence, in a hypergraph 
+                                        format (see Kenneth Heafield's lazy 
+                                        hypergraph decoder). This flag is 
+                                        followed by 3 values: 'true (gz|txt|bz)
+                                        directory-name'
+
+OOV Handling Options:
+  --drop-unknown                        drop unknown words instead of copying 
+                                        them
+  --mark-unknown                        mark unknown words in output
+  --unknown-word-prefix                 prefix to unknwon word when marked 
+                                        (default: 'UNK')
+  --unknown-word-suffix                 suffix to unknwon word when marked 
+                                        (default: '')
+  --lmodel-oov-feature                  add language model oov feature, one per
+                                        model
+  --output-unknowns                     Output the unknown (OOV) words to the 
+                                        given file, one line per sentence
+  --always-create-direct-transopt       Always create a translation that 
+                                        translates the source word ad-verbatim
+
+General Factorization Options:
+  --factor-delimiter                    specify a different factor delimiter 
+                                        than the default
+  --mapping                             description of decoding steps
+  --placeholder-factor                  Which source factor to use to store the
+                                        original text for placeholders. The 
+                                        factor must not be used by a 
+                                        translation or gen model
+
+Options when using compact phrase and reordering tables.:
+  --minphr-memory                       Load phrase table in minphr format into
+                                        memory
+  --minlexr-memory                      Load lexical reordering table in 
+                                        minlexr format into memory
+
+IRSTLM Options:
+  --clean-lm-cache                      clean language model caches after N 
+                                        translations (default N=1)
+
+Options used in tuning.:
+  --weight-overwrite                    special parameter for mert. All on 1 
+                                        line. Overrides weights specified in 
+                                        'weights' argument
+  --feature-add                         Add a feature function on the command 
+                                        line. Used by mira to add BLEU feature
+  --weight-add                          Add weight for FF if it doesn't exist, 
+                                        i.e weights here are added 1st, and can
+                                        be override by the ini file or on the 
+                                        command line. Used to specify initial 
+                                        weights for FF that was also specified 
+                                        on the copmmand line
+
+Miscellaneous Options:
+  --mira                                do mira training
+  --description                         Source language, target language, 
+                                        description
+  --no-cache                            Disable all phrase-table caching. 
+                                        Default = false (ie. enable caching)
+  --default-non-term-for-empty-range-only 
+                                        Don't add [X] to all ranges, just 
+                                        ranges where there isn't a source 
+                                        non-term. Default = false (ie. add [X] 
+                                        everywhere)
+  --s2t-parsing-algorithm               Which S2T parsing algorithm to use. 
+                                        0=recursive CYK+, 1=scope-3 (default = 
+                                        0)
+  --decoding-graph-backoff              only use subsequent decoding paths for 
+                                        unknown spans of given length
+  --references                          Reference file(s) - used for bleu score
+                                        feature
+  -r [ --recover-input-path ]           (conf net/word lattice only) - recover 
+                                        input path corresponding to the best 
+                                        translation
+  --link-param-count                    Number of parameters on word links when
+                                        using confusion networks or lattices 
+                                        (default = 1)
+  --feature-name-overwrite              Override feature name (NOT arguments). 
+                                        Eg. SRILM-->KENLM, PhraseDictionaryMemo
+                                        ry-->PhraseDictionaryScope3
+  --feature                             All the feature functions should be 
+                                        here
+  --context-string                      A (tokenized) string containing context
+                                        words for context-sensitive 
+                                        translation.
+  --context-weights                     A key-value map for context-sensitive 
+                                        translation.
+  --context-window                      Context window (in words) for 
+                                        context-sensitive translation: 
+                                        {+|-|+-}<number>.
+
+Deprecated Options:
+  --link-param-count                    DEPRECATED. DO NOT USE. Number of 
+                                        parameters on word links when using 
+                                        confusion networks or lattices (default
+                                        = 1)
+  --weight-slm                          DEPRECATED. DO NOT USE. weight(s) for 
+                                        syntactic language model
+  --weight-bl                           DEPRECATED. DO NOT USE. weight for bleu
+                                        score feature
+  -d [ --weight-d ]                     DEPRECATED. DO NOT USE. weight(s) for 
+                                        distortion (reordering components)
+  --weight-dlm                          DEPRECATED. DO NOT USE. weight for 
+                                        discriminative LM feature function (on 
+                                        top of sparse weights)
+  --weight-lr                           DEPRECATED. DO NOT USE. weight(s) for 
+                                        lexicalized reordering, if not included
+                                        in weight-d
+  -g [ --weight-generation ]            DEPRECATED. DO NOT USE. weight(s) for 
+                                        generation components
+  -I [ --weight-i ]                     DEPRECATED. DO NOT USE. weight(s) for 
+                                        word insertion - used for parameters 
+                                        from confusion network and lattice 
+                                        input links
+  --weight-l                            DEPRECATED. DO NOT USE. weight(s) for 
+                                        language models
+  --weight-lex                          DEPRECATED. DO NOT USE. weight for 
+                                        global lexical model
+  --weight-glm                          DEPRECATED. DO NOT USE. weight for 
+                                        global lexical feature, sparse producer
+  --weight-wt                           DEPRECATED. DO NOT USE. weight for word
+                                        translation feature
+  --weight-pp                           DEPRECATED. DO NOT USE. weight for 
+                                        phrase pair feature
+  --weight-pb                           DEPRECATED. DO NOT USE. weight for 
+                                        phrase boundary feature
+  --weight-t                            DEPRECATED. DO NOT USE. weights for 
+                                        translation model components
+  -w [ --weight-p ]                     DEPRECATED. DO NOT USE. weight for 
+                                        phrase penalty
+  -w [ --weight-w ]                     DEPRECATED. DO NOT USE. weight for word
+                                        penalty
+  -u [ --weight-u ]                     DEPRECATED. DO NOT USE. weight for 
+                                        unknown word penalty
+  -e [ --weight-e ]                     DEPRECATED. DO NOT USE. weight for word
+                                        deletion
+  --text-type                           DEPRECATED. DO NOT USE. should be one 
+                                        of dev/devtest/test, used for domain 
+                                        adaptation features
+  --input-scores                        DEPRECATED. DO NOT USE. 2 numbers on 2 
+                                        lines - [1] of scores on each edge of a
+                                        confusion network or lattice input 
+                                        (default=1). [2] Number of 'real' word 
+                                        scores (0 or 1. default=0)
+  --dlm-model                           DEPRECATED. DO NOT USE. Order, factor 
+                                        and vocabulary file for discriminative 
+                                        LM. Use * for filename to indicate 
+                                        unlimited vocabulary.
+  --generation-file                     DEPRECATED. DO NOT USE. location and 
+                                        properties of the generation table
+  --global-lexical-file                 DEPRECATED. DO NOT USE. 
+                                        discriminatively trained global lexical
+                                        translation model file
+  --glm-feature                         DEPRECATED. DO NOT USE. 
+                                        discriminatively trained global lexical
+                                        translation feature, sparse producer
+  --lmodel-file                         DEPRECATED. DO NOT USE. location and 
+                                        properties of the language models
+  --lmodel-dub                          DEPRECATED. DO NOT USE. dictionary 
+                                        upper bounds of language models
+  --ttable-file                         DEPRECATED. DO NOT USE. location and 
+                                        properties of the translation tables
+  --phrase-pair-feature                 DEPRECATED. DO NOT USE. Source and 
+                                        target factors for phrase pair feature
+  --phrase-boundary-source-feature      DEPRECATED. DO NOT USE. Source factors 
+                                        for phrase boundary feature
+  --phrase-boundary-target-feature      DEPRECATED. DO NOT USE. Target factors 
+                                        for phrase boundary feature
+  --phrase-length-feature               DEPRECATED. DO NOT USE. Count features 
+                                        for source length, target length, both 
+                                        of each phrase
+  --target-word-insertion-feature       DEPRECATED. DO NOT USE. Count feature 
+                                        for each unaligned target word
+  --source-word-deletion-feature        DEPRECATED. DO NOT USE. Count feature 
+                                        for each unaligned source word
+  --word-translation-feature            DEPRECATED. DO NOT USE. Count feature 
+                                        for word translation according to word 
+                                        alignment
+
+Zombie Options:
+  --distortion-file                     source factors (0 if table independent 
+                                        of source), target factors, location of
+                                        the factorized/lexicalized reordering 
+                                        tables
+
+Available feature functions:
+BleuScoreFeature ConstrainedDecoding ControlRecombination CorrectionPattern CountNonTerms CoveredReferenceFeature DeleteRules DesegModel Distortion DynamicCacheBasedLanguageModel EditOps Generation GlobalLexicalModel HyperParameterAsWeight IRSTLM InputFeature KENLM LexicalReordering MaxSpanFreeNonTermSource Mmsapt Model1Feature NieceTerminal OpSequenceModel PhraseBoundaryFeature PhraseDictionaryALSuffixArray PhraseDictionaryBinary PhraseDictionaryBitextSampling PhraseDictionaryCompact PhraseDictionaryDynamicCacheBased PhraseDictionaryFuzzyMatch PhraseDictionaryGroup PhraseDictionaryMemory PhraseDictionaryMemoryPerSentence PhraseDictionaryMultiModel PhraseDictionaryMultiModelCounts PhraseDictionaryOnDisk PhraseDictionaryScope3 PhraseDictionaryTransliteration PhraseLengthFeature PhraseOrientationFeature PhrasePairFeature PhrasePenalty ProbingPT ReferenceComparison ReloadingLM RulePairUnlexicalizedSource RuleScope RuleTable SetSourcePhrase SkeletonLM SkeletonPT SkeletonStatefulFF SkeletonStatelessFF SkeletonTranslationOptionListFeature SoftMatchingFeature SoftSourceSyntacticConstraintsFeature SourceGHKMTreeInputMatchFeature SourceWordDeletionFeature SpanLength SparseHieroReorderingFeature SyntaxInputWeight SyntaxRHS TargetBigramFeature TargetConstituentAdjacencyFeature TargetNgramFeature TargetPreferencesFeature TargetWordInsertionFeature TreeStructureFeature UnalignedWordCountFeature UnknownWordPenalty WordPenalty WordTranslationFeature 
+
+No configuration file was specified.  Use -config or -f
