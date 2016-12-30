@@ -2,7 +2,7 @@
 Convenience scripts for use of the Moses machine translation command line utility.
 
 These Python scripts I created and used for my own research and experimentation with Moses, in order to carry out many tests.
-A paper on this research will be published later this month, but currently you can find a summary of the research at this link: https://docs.google.com/presentation/d/10ACvar3arzPmzZ-ohVqKmQOPefhsIIhtY2-_mL3KctU/edit?usp=sharing
+A paper on this research will be published later this month, but currently you can find a summary of the research at this link: https://docs.google.com/document/d/1URHWiXPeFG3w48oZCDtta6xaPMqbY46DLURB_X61OzI/edit?usp=sharing
 
 The following scripts require command line arguments:  
 *moses_prepare.py*  
